@@ -1,0 +1,102 @@
+package priv.zjay.main.controller;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import priv.zjay.main.service.UserService;
+import priv.zjay.utils.QString;
+
+
+@Controller
+public class LoginController {
+
+	@Resource(name="contractAddress")
+	private String address;
+	
+	@Autowired
+	private UserService userService;
+	//登陆页面
+	@RequestMapping("/login")
+	public String login() {
+		return "login/login";
+	}
+	//注册页面
+	@RequestMapping("/register")
+	public String register() {
+		return "login/register";  
+	}
+	
+	/**
+	 * 验证登陆
+	 * @param username
+	 * @param password
+	 * @param request
+	 * @param resp
+	 * @return
+	 */
+	@RequestMapping("/index")
+	public String index(@RequestParam(value="userName",defaultValue="") String userName,
+			@RequestParam(value="password",defaultValue="") String password,
+			Model model, HttpServletResponse resp, HttpServletRequest request) {
+		HttpSession session = request.getSession();
+		boolean flag = !QString.IsNullOrEmpty(userName) && !QString.IsNullOrEmpty(password);
+		if(flag) {
+			//都不为空代表登陆（包含第一次登陆和第n次登陆）
+			return loginByNameAndPassword(userName, password, model, session);
+		}
+		Object userId = session.getAttribute("userId");
+		if(userId != null) {
+			try {
+				//已经登陆，查名字
+				userName = userService.getUserNameById(userId.toString());
+				return "redirect:integral";
+			} catch (Exception e) {
+				e.printStackTrace();
+				model.addAttribute("errorMsg", "数据库连接出错！");
+				return login();
+			}
+		}
+		//无userId直接跳回login
+		model.addAttribute("errorMsg", "请先登陆！");
+		return login();
+	}
+	/**
+	 * 统一登陆验证
+	 * @param userId
+	 * @param userName
+	 * @param password
+	 * @param model
+	 * @param session
+	 * @return
+	 */
+	private String loginByNameAndPassword(String userName,
+			String password, Model model, HttpSession session) {
+		String userId = null;
+		try {
+			//根据name password匹配找出userId
+			userId = userService.verifyUser(userName, password);
+		} catch (Exception e) {
+			e.printStackTrace();
+			model.addAttribute("errorMsg", "数据库连接出错！");
+			return login();
+		}
+		if(userId != null) {
+			//有这个用户直接可以登陆
+			session.setAttribute("userId", userId);
+			session.setAttribute("userName", userName);
+			return "redirect:integral";
+		}else {
+			//没有这个人
+			model.addAttribute("errorMsg", "用户名或密码错误！");
+			return login();
+		}
+	}
+}

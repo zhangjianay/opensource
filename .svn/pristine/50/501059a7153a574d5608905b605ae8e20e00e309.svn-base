@@ -1,0 +1,62 @@
+package priv.zjay.main.controller;
+
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import priv.zjay.main.service.UserService;
+
+
+@Controller
+public class LoginController {
+
+	@Autowired
+	private UserService userService;
+	//登陆页面
+	@RequestMapping("/login")
+	public String login() {
+		return "login/login";  
+	}
+	//注册页面
+	@RequestMapping("/register")
+	public String register() {
+		return "login/register";  
+	}
+	
+	/**
+	 * 验证登陆
+	 * @param username
+	 * @param password
+	 * @param request
+	 * @param resp
+	 * @return
+	 */
+	@RequestMapping("/index")
+	public String login(@RequestParam(value="userName",defaultValue="") String userName,
+			@RequestParam(value="password",defaultValue="") String password,
+			Model model, HttpServletResponse resp) {
+		//验证用户名 密码
+		String id = null;
+		try {
+			id = userService.verifyUser(userName, password);
+		} catch (Exception e) {
+			e.printStackTrace();
+			model.addAttribute("errorMsg", "数据库连接出错！");
+			return login();
+		}
+		if(id != null) {
+			Cookie cookie = new Cookie("userid",id);
+			resp.addCookie(cookie);
+			model.addAttribute("userName", userName);
+			return "login/main";
+		}else {
+			model.addAttribute("errorMsg", "用户名或密码错误！");
+			return login();
+		}
+	}
+}
