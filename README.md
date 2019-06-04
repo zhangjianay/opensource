@@ -1,2 +1,2 @@
 # opensource
-基于fisco-bcos的官方sdk做的一个应用积分demo。
+基于fisco-bcos的1.3.4版本官方sdk做的一个应用积分demo。
